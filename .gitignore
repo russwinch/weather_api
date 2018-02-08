@@ -61,4 +61,4 @@ target/
 venv
 
 # vim swap files
-.swp
+.*.swp
