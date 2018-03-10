@@ -60,5 +60,8 @@ target/
 
 venv
 
+# instance
+/instance
+
 # vim swap files
 .*.swp
