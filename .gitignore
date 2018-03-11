@@ -58,7 +58,9 @@ docs/_build/
 # PyBuilder
 target/
 
-venv
+venv/
+instance/
+.mypy_cache/
 
 # vim swap files
 .*.swp
