@@ -5,17 +5,30 @@ Http gzip compression should be enabled.
 '''
 
 import requests
-import instance.config # modify this once flask is set up *****
+import instance.config  # modify this once flask is set up *****
 
-dark_sky_call = (
-        'https://api.darksky.net/forecast/'
-        + instance.config.DARK_SKY_API_KEY + '/'
-        + str(instance.config.LATITUDE) + ','
-        + str(instance.config.LONGITUDE))
-call_options = {'units': 'si', 'extend': 'hourly'}
-call_headers = {'Accept-Encoding': 'gzip'}
 
-r = requests.get(dark_sky_call, params=call_options, headers=call_headers)
+def dark_sky_call(
+        key,
+        latitude,
+        longitude,
+        options={'units': 'si', 'extend': 'hourly'},
+        headers={'Accept-Encoding': 'gzip'}):
 
-print(r.url)
-print(r.text)
+    call = (
+        'https://api.darksky.net/forecast/' +
+        instance.config.DARK_SKY_API_KEY + '/' +
+        str(latitude) + ',' +
+        str(longitude))
+
+    return requests.get(call, params=options, headers=headers)
+
+
+if __name__ == '__main__':
+    r = dark_sky_call(
+            instance.config.DARK_SKY_API_KEY,
+            instance.config.LATITUDE,
+            instance.config.LONGITUDE)
+
+    print(r.url)
+    print(r.text)
