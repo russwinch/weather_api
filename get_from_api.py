@@ -1,13 +1,14 @@
 '''Requests data from the weather api.'''
 
 import requests
+from requests.exceptions import InvalidHeader
 import instance.config  # modify this once flask is set up *****
 
 
 def dark_sky_call(
-                key,
-                latitude,
-                longitude,
+                key=None,
+                latitude=None,
+                longitude=None,
                 options={'units': 'si', 'extend': 'hourly'},
                 headers={'Accept-Encoding': 'gzip'},
                 timeout=2):
@@ -20,6 +21,9 @@ def dark_sky_call(
     headers includes http gzip conversion by default
     timeout is in seconds
     '''
+    if not key or not latitude or not longitude:
+        raise TypeError(
+            "Missing argument. key, latitude and longitude are all required.")
 
     call = (
         'https://api.darksky.net/forecast/'
@@ -27,18 +31,23 @@ def dark_sky_call(
         + str(latitude) + ','
         + str(longitude))
 
-    return requests.get(call, params=options, headers=headers)
+    return requests.get(call, params=options, headers=headers, timeout=timeout)
 
 
 if __name__ == '__main__':
     r = dark_sky_call(
-            instance.config.DARK_SKY_API_KEY,
-            instance.config.LATITUDE,
-            instance.config.LONGITUDE)
+            key=instance.config.DARK_SKY_API_KEY,
+            latitude=instance.config.LATITUDE,
+            longitude=instance.config.LONGITUDE)
+
+    if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+
+    content_type = r.headers["Content-Type"]
+    if 'application/json' not in content_type:
+        raise InvalidHeader(
+                "Wrong content type in header: {}".format(content_type))
 
     print(r.url)
-    print(r.status_code)
-    print(r.status_code == requests.codes.ok)
-    print(r.headers)  # test on Content-Encoding and Content-Type
     # print(r.text)
     # print(r.json())  # raises an exception if unable to decode
