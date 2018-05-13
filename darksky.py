@@ -6,8 +6,6 @@ Requests data from the weather api.
 import requests
 from requests.exceptions import InvalidHeader
 
-import instance.config  # modify this once flask is set up *****
-
 
 class DarkSky(object):
 
@@ -17,6 +15,9 @@ class DarkSky(object):
         """
         :key is the secret api key
         """
+        if not key:
+            raise TypeError(
+                "Missing argument. Key is required.")
         self.key = key
 
     def request(self,
@@ -35,9 +36,9 @@ class DarkSky(object):
         :timeout is in seconds
         """
 
-        if not self.key or not latitude or not longitude:
+        if not latitude or not longitude:
             raise TypeError(
-                "Missing argument. key, latitude and longitude are required.")
+                "Missing argument. Latitude and longitude are required.")
 
         url = ("https://api.darksky.net/forecast/{key}/{lat},{lon}".format(
                    key=instance.config.DARK_SKY_API_KEY,
@@ -57,11 +58,12 @@ class DarkSky(object):
             raise InvalidHeader(
                     "Content type is not JSON as expected: {}".format(
                         content_type))
-
         return r
 
 
 if __name__ == '__main__':
+    import instance.config  # modify this once flask is set up *****
+
     dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
     try:
         r = dark_sky.request(latitude=instance.config.LATITUDE,
