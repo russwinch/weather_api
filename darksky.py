@@ -38,10 +38,10 @@ class DarkSky(object):
 
         if not latitude or not longitude:
             raise TypeError(
-                "Missing argument. Latitude and longitude are required.")
+                "Missing argument. Latitude and Longitude are required.")
 
         url = ("https://api.darksky.net/forecast/{key}/{lat},{lon}".format(
-                   key=instance.config.DARK_SKY_API_KEY,
+                   key=self.key,
                    lat=latitude,
                    lon=longitude))
 

@@ -64,3 +64,6 @@ instance/
 
 # vim swap files
 .*.swp
+
+# pytest
+.pytest_cache/
