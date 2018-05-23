@@ -23,18 +23,28 @@ def _generate_random_key(length=32):
     return key
 
 
-def _mock_response(raise_for_status=None,
-                   status_code=200,
-                   content_type='application/json; charset=utf-8',
-                   content='{}'):
-    mock_resp = mock.Mock()
-    mock_resp.raise_for_status = mock.Mock()
-    if raise_for_status:
-        mock_resp.raise_for_status.side_effect = raise_for_status
-    mock_resp.status_code = status_code
-    # mock_resp.add_header("Content-Type", content_type)
+class MockedResponse(object):
+    def __init__(self,
+                 raise_for_status=None,
+                 status_code=200,
+                 headers={
+                        'Server': 'nginx',
+                        'Date': 'Sat, 19 May 2018 13:13:34 GMT',
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Transfer-Encoding': 'chunked',
+                        'Connection': 'keep-alive',
+                        'X-Forecast-API-Calls': '2',
+                        'Cache-Control': 'max-age=60',
+                        'Expires': 'Sat, 19 May 2018 13:14:34 +0000',
+                        'X-Response-Time': '152.328ms',
+                        'Content-Encoding': 'gzip'},
+                 content='{}'):
 
-    return mock_resp
+        self.raise_for_status = raise_for_status
+        self.status_code = status_code
+        self.headers = headers
+        self.content = content
+        self.raise_for_status = raise_for_status
 
 
 def test_init_raises_TypeError_with_no_key_variable():
@@ -78,9 +88,9 @@ def test_request_raises_TypeError_with_missing_lat(darksky):
             in str(e.value))
 
 
-def test_response_status_code(darksky):
-    with mock.patch('dark_sky_test.requests.get') as mock_get:
-        mock_resp = _mock_response(status_code=200)
-        mock_get.return_value = mock_resp
+def test_response_status_code_ok(darksky):
+    with mock.patch('darksky.requests.get') as mock_request:
+        mock_response = MockedResponse()
+        mock_request.return_value = mock_response
         result = darksky.request(latitude='1.0', longitude='1.0')
-        assert result.status_code == 100
+        assert result.status_code == 200
