@@ -7,6 +7,8 @@ import pytest
 import random
 import string
 import unittest
+import requests
+from requests.exceptions import HTTPError
 # from unittest.mock import Mock, patch
 
 from darksky import DarkSky
@@ -23,10 +25,10 @@ def _generate_random_key(length=32):
     return key
 
 
+# class MockedResponse(requests.Response):
 class MockedResponse(object):
     def __init__(self,
-                 raise_for_status=None,
-                 status_code=200,
+                 content='{}',
                  headers={
                         'Server': 'nginx',
                         'Date': 'Sat, 19 May 2018 13:13:34 GMT',
@@ -38,13 +40,25 @@ class MockedResponse(object):
                         'Expires': 'Sat, 19 May 2018 13:14:34 +0000',
                         'X-Response-Time': '152.328ms',
                         'Content-Encoding': 'gzip'},
-                 content='{}'):
+                 # reason=None,
+                 status_code=200,
+                 # url=None,
+                 ):
 
-        self.raise_for_status = raise_for_status
+        # import pdb; pdb.set_trace()
+        # super().__init__(*args, **kwargs)
+        # print(reason)
+        # print(url)
         self.status_code = status_code
         self.headers = headers
         self.content = content
-        self.raise_for_status = raise_for_status
+        # self.reason = reason
+        # self.url = url
+
+    def raise_for_status(self):
+        print('Mocked raise_for_status called with tatus code {}.'.format(
+                                                            self.status_code))
+        raise HTTPError(self.status_code)
 
 
 def test_init_raises_TypeError_with_no_key_variable():
@@ -88,9 +102,29 @@ def test_request_raises_TypeError_with_missing_lat(darksky):
             in str(e.value))
 
 
-def test_response_status_code_ok(darksky):
-    with mock.patch('darksky.requests.get') as mock_request:
-        mock_response = MockedResponse()
+def test_response_no_error_when_status_code_ok(darksky):
+    try:
+        with mock.patch('darksky.requests.get') as mock_request:
+            # mock_response = MockedResponse(status_code=200)
+            mock_request.return_value = MockedResponse(status_code=200)
+            # mock_request.return_value = mock_response
+            darksky.request(latitude='1.0', longitude='1.0')
+    except Exception as e:
+        pytest.fail(str(e))
+
+
+
+@pytest.mark.parametrize('status_code', range(400, 600))
+@mock.patch('darksky.requests.get')
+def test_response_raises_error_when_status_code_not_ok(
+                    mock_request, status_code, darksky):
+    print(status_code)
+    with pytest.raises(HTTPError) as e:
+        mock_response = MockedResponse(status_code=status_code)
         mock_request.return_value = mock_response
-        result = darksky.request(latitude='1.0', longitude='1.0')
-        assert result.status_code == 200
+        req = darksky.request(latitude='1.0', longitude='1.0')
+        req.raise_for_status.assert_called_once_with(HTTPError)
+        print("Error generated: {} {}".format(e.type, e.value))
+        assert (str(status_code) == str(e.value))
+
+# 'text/html; charset=ISO-8859-1'
