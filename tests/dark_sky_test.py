@@ -6,10 +6,7 @@ import mock
 import pytest
 import random
 import string
-import unittest
-import requests
-from requests.exceptions import HTTPError
-# from unittest.mock import Mock, patch
+from requests.exceptions import HTTPError, InvalidHeader
 
 from darksky import DarkSky
 
@@ -66,6 +63,7 @@ def test_init_stores_key_variable(exec_no):
     assert darksky_with_key.key == key
 
 
+# this is the setup
 @pytest.fixture
 def darksky():
     return DarkSky(key=_generate_random_key())
@@ -117,4 +115,13 @@ def test_response_raises_error_when_status_code_not_ok(mock_request,
         print("Error generated: {} {}".format(e.type, e.value))
         assert (str(status_code) == str(e.value))
 
-# 'text/html; charset=ISO-8859-1'
+
+@mock.patch('darksky.requests.get')
+def test_response_raises_error_when_header_not_json(mock_request, darksky):
+    with pytest.raises(InvalidHeader) as e:
+        mock_response = MockedResponse(headers={
+                        'Content-Type': 'text/html; charset=ISO-8859-1'})
+        mock_request.return_value = mock_response
+        darksky.request(latitude='1.0', longitude='1.0')
+
+    assert ("Content type is not JSON as expected:" in str(e.value))
