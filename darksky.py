@@ -82,19 +82,3 @@ class DarkSky(object):
                     "Content type is not JSON as expected: {}".format(
                         content_type))
         return r
-
-
-if __name__ == '__main__':
-    import instance.config  # modify this once flask is set up *****
-
-    dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
-    try:
-        r = dark_sky.request(latitude=instance.config.LATITUDE,
-                             longitude=instance.config.LONGITUDE)
-        print(r.json())  # raises an exception if unable to decode
-
-    except ValueError as e:
-        print("Decoding failed: {}".format(e))
-
-    except Exception as e:
-        print("Error {} occurred. Retry when properly implemented".format(e))

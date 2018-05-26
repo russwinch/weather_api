@@ -67,3 +67,6 @@ instance/
 
 # pytest
 .pytest_cache/
+
+# exported data
+darksky.json
