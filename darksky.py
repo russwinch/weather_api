@@ -4,7 +4,7 @@ Requests data from the weather api.
 """
 
 import requests
-from requests.exceptions import InvalidHeader
+from requests.exceptions import HTTPError, InvalidHeader
 
 
 class DarkSky(object):
@@ -20,6 +20,25 @@ class DarkSky(object):
                 "Missing argument. Key is required.")
         self.key = key
 
+    @staticmethod
+    def _raise_http_error(r):
+        """
+        Attempts to look up the status code from a response
+        and raises a HTTPError.
+
+        :r is the response object
+        """
+        try:
+            # look up the list of codes within requests
+            error_desc = requests.status_codes._codes[r.status_code][0]
+        except KeyError:
+            error_desc = 'Error'
+
+        raise HTTPError("HTTPError: {} Error: {} for url: {}".format(
+                                                                r.status_code,
+                                                                error_desc,
+                                                                r.url))
+
     def request(self,
                 latitude=None,
                 longitude=None,
@@ -28,7 +47,7 @@ class DarkSky(object):
                 timeout=2):
 
         """
-        Returns a request object from the Dark Sky API.
+        Returns a response object from the Dark Sky API.
 
         :latitude and longitude can be supplied as string or float
         :options are converted into query string paramaters
@@ -45,15 +64,19 @@ class DarkSky(object):
                    lat=latitude,
                    lon=longitude))
 
-        r = requests.get(url,
+        r = requests.get(url=url,
                          params=options,
                          headers=headers,
                          timeout=timeout)
 
         if r.status_code != requests.codes.ok:
-            r.raise_for_status()
+            self._raise_http_error(r)
 
-        content_type = r.headers["Content-Type"]
+        try:
+            content_type = r.headers["Content-Type"]
+        except KeyError:
+            raise InvalidHeader("Content-Type not returned in header")
+
         if 'application/json' not in content_type:
             raise InvalidHeader(
                     "Content type is not JSON as expected: {}".format(

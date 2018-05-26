@@ -5,8 +5,8 @@ Testing the DarkSky API connector
 import mock
 import pytest
 import random
-import string
 from requests.exceptions import HTTPError, InvalidHeader
+import string
 
 from darksky import DarkSky
 
@@ -36,92 +36,114 @@ class MockedResponse(object):
                         'Expires': 'Sat, 19 May 2018 13:14:34 +0000',
                         'X-Response-Time': '152.328ms',
                         'Content-Encoding': 'gzip'},
-                 status_code=200):
+                 status_code=200,
+                 url='https://api.darksky.net/forecast/...'):
 
         self.status_code = status_code
         self.headers = headers
         self.content = content
-
-    def raise_for_status(self):
-        print('Mocked raise_for_status called with status code {}.'.format(
-                                                            self.status_code))
-        raise HTTPError(self.status_code)
+        self.url = url
 
 
-def test_init_raises_TypeError_with_no_key_variable():
-    with pytest.raises(TypeError) as e:
-        DarkSky()
-    assert "Missing argument. Key is required." in str(e.value)
+class TestInitialisation(object):
+    """Testing the initialisation of the object with the secret key."""
+
+    def test_init_raises_TypeError_with_no_key_variable(self):
+        with pytest.raises(TypeError) as e:
+            DarkSky()
+        assert "Missing argument. Key is required." in str(e.value)
+
+    # run this next test 30 times
+    @pytest.mark.parametrize('exec_no', range(30))
+    def test_init_stores_key_variable(self, exec_no):
+        key = _generate_random_key()
+        print("Test {} with key: {}".format(exec_no, key))
+        darksky_with_key = DarkSky(key=key)
+        assert darksky_with_key.key == key
 
 
-# run this next test 30 times
-@pytest.mark.parametrize('exec_no', range(30))
-def test_init_stores_key_variable(exec_no):
-    key = _generate_random_key()
-    print("Test {} with key: {}".format(exec_no, key))
-    darksky_with_key = DarkSky(key=key)
-    assert darksky_with_key.key == key
+class TestRequest(object):
 
+    # this is the setup
+    @staticmethod
+    @pytest.fixture
+    def darksky():
+        return DarkSky(key=_generate_random_key())
 
-# this is the setup
-@pytest.fixture
-def darksky():
-    return DarkSky(key=_generate_random_key())
+    def test_request_raises_TypeError_with_missing_lat_long(self, darksky):
+        with pytest.raises(TypeError) as e:
+            darksky.request()
+        assert ("Missing argument. Latitude and Longitude are required."
+                in str(e.value))
 
+    def test_request_raises_TypeError_with_missing_long(self, darksky):
+        with pytest.raises(TypeError) as e:
+            darksky.request(latitude='1.0')
+        assert ("Missing argument. Latitude and Longitude are required."
+                in str(e.value))
 
-def test_request_raises_TypeError_with_missing_lat_long(darksky):
-    with pytest.raises(TypeError) as e:
-        darksky.request()
-    assert ("Missing argument. Latitude and Longitude are required."
-            in str(e.value))
+    def test_request_raises_TypeError_with_missing_lat(self, darksky):
+        with pytest.raises(TypeError) as e:
+            darksky.request(longitude='1.0')
+        assert ("Missing argument. Latitude and Longitude are required."
+                in str(e.value))
 
-
-def test_request_raises_TypeError_with_missing_long(darksky):
-    with pytest.raises(TypeError) as e:
-        darksky.request(latitude='1.0')
-    assert ("Missing argument. Latitude and Longitude are required."
-            in str(e.value))
-
-
-def test_request_raises_TypeError_with_missing_lat(darksky):
-    with pytest.raises(TypeError) as e:
-        darksky.request(longitude='1.0')
-    assert ("Missing argument. Latitude and Longitude are required."
-            in str(e.value))
-
-
-def test_response_no_error_when_status_code_ok(darksky):
-    try:
-        with mock.patch('darksky.requests.get') as mock_request:
+    @mock.patch('darksky.requests.get')
+    def test_response_no_error_when_status_code_ok(self,
+                                                   mock_request,
+                                                   darksky):
+        try:
             mock_request.return_value = MockedResponse(status_code=200)
             darksky.request(latitude='1.0', longitude='1.0')
-    except Exception as e:
-        pytest.fail(str(e))
+        except Exception as e:
+            pytest.fail(str(e))
 
+    @pytest.mark.parametrize('status_code', range(201, 600))
+    @mock.patch('darksky.requests.get')
+    def test_response_raises_error_when_status_code_not_ok(self,
+                                                           mock_request,
+                                                           status_code,
+                                                           darksky):
+        print(status_code)
+        with pytest.raises(HTTPError) as e:
+            mock_response = MockedResponse(status_code=status_code)
+            mock_request.return_value = mock_response
+            darksky.request(latitude='1.0', longitude='1.0')
+        assert (str(status_code) in str(e.value))
 
-@pytest.mark.parametrize('status_code', range(400, 600))
-@mock.patch('darksky.requests.get')
-def test_response_raises_error_when_status_code_not_ok(mock_request,
-                                                       status_code,
-                                                       darksky):
-    print(status_code)
-    with pytest.raises(HTTPError) as e:
-        mock_response = MockedResponse(status_code=status_code)
-        mock_request.return_value = mock_response
-        req = darksky.request(latitude='1.0', longitude='1.0')
+    @mock.patch('darksky.requests.get')
+    def test_response_raises_no_error_when_header_is_json(self,
+                                                          mock_request,
+                                                          darksky):
+        try:
+            mock_response = MockedResponse()
+            mock_request.return_value = mock_response
+            darksky.request(latitude='1.0', longitude='1.0')
+        except InvalidHeader as e:
+            pytest.fail(str(e))
 
-        req.raise_for_status.assert_called_once_with(HTTPError)
+    @pytest.mark.parametrize('headers', [
+                            {'Content-Type': "text/plain; charset=utf-8"},
+                            {'Content-Type': 'text/html; charset=ISO-8859-1'}])
+    @mock.patch('darksky.requests.get')
+    def test_response_raises_error_when_header_not_json(self,
+                                                        mock_request,
+                                                        headers,
+                                                        darksky):
+        with pytest.raises(InvalidHeader) as e:
+            mock_response = MockedResponse(headers=headers)
+            print(headers)
+            mock_request.return_value = mock_response
+            darksky.request(latitude='1.0', longitude='1.0')
+        assert ("Content type is not JSON as expected:" in str(e.value))
 
-        print("Error generated: {} {}".format(e.type, e.value))
-        assert (str(status_code) == str(e.value))
-
-
-@mock.patch('darksky.requests.get')
-def test_response_raises_error_when_header_not_json(mock_request, darksky):
-    with pytest.raises(InvalidHeader) as e:
-        mock_response = MockedResponse(headers={
-                        'Content-Type': 'text/html; charset=ISO-8859-1'})
-        mock_request.return_value = mock_response
-        darksky.request(latitude='1.0', longitude='1.0')
-
-    assert ("Content type is not JSON as expected:" in str(e.value))
+    @mock.patch('darksky.requests.get')
+    def test_response_raises_error_when_header_is_missing_content_type(
+                                                                self,
+                                                                mock_request,
+                                                                darksky):
+        with pytest.raises(InvalidHeader) as e:
+            mock_response = MockedResponse(headers={})
+            mock_request.return_value = mock_response
+            darksky.request(latitude='1.0', longitude='1.0')
+        assert "Content-Type not returned in header" in str(e.value)
