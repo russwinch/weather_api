@@ -9,43 +9,42 @@ import json
 
 from darksky import DarkSky
 
-FILE = 'darksky.json'
 
-
-def write_file(file_out, data):
-    with open(file_out, mode='w') as out:
-        out.write(data)
-
-
-def read_file(file_in):
-    """Retrieves and parses the json stored in the file and returns a dict."""
-    with open(file_in) as f:
-        text = f.read()
-    return json.loads(text)
-
-
-def update_darksky():
-    """Requests and returns a response from DarkSky using instance config."""
-    dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
-    r = dark_sky.request(latitude=instance.config.LATITUDE,
-                         longitude=instance.config.LONGITUDE)
-    write_file(FILE, r.text)
-    print("Updated and written to local file.")
-    return r
-
-
-def read_local_darksky(print_summary=True):
+def read_local_darksky(file_in, print_summary=True):
     """
     Returns a parsed dict from the local text file.
+
+    :file_in: the location of the file with the forecast json
     :print_summary: a boolean which controls if the summary forecast will be
-                    printed after retrieval.
+                    printed after retrieval
     """
-    weather_dict = read_file(FILE)
+    with open(file_in) as f:
+        weather_json = f.read()
+    weather_dict = json.loads(weather_json)
     if print_summary:
-        print("Daily summary:\n{}".format(weather_dict['daily']['summary']))
+        print("Weather summary:\n{}".format(weather_dict['daily']['summary']))
+
     return weather_dict
 
 
+def update_darksky(file_out):
+    """
+    Requests and returns a response from DarkSky using instance config.
+
+    :file_out: the location of the file where the forecast json will be stored
+    """
+    dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
+    r = dark_sky.request(latitude=instance.config.LATITUDE,
+                         longitude=instance.config.LONGITUDE)
+    with open(file_out, mode='w') as out:
+        out.write(r.text)
+    print("Updated and written to local file.")
+
+    return r
+
+
 if __name__ == '__main__':
-    update_darksky()
-    read_local_darksky()
+    weather_file = 'darksky.json'
+
+    weather_response = update_darksky(weather_file)
+    weather_dict = read_local_darksky(weather_file)
