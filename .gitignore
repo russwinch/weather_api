@@ -70,3 +70,4 @@ instance/
 
 # exported data
 darksky.json
+tests/TEST-DATA-darksky.json
