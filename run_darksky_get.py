@@ -31,13 +31,14 @@ def update_darksky(file_out):
     :file_out: the location of the file where the forecast json will be stored
     """
     dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
-    r = dark_sky.request(latitude=instance.config.LATITUDE,
-                         longitude=instance.config.LONGITUDE)
+    response = dark_sky.request(latitude=instance.config.LATITUDE,
+                                longitude=instance.config.LONGITUDE)
+
     with open(file_out, mode='w') as f_out:
-        f_out.write(r.text)
+        f_out.write(response.text)
 
     print("Updated and written to local file.")
-    return r
+    return response
 
 
 if __name__ == '__main__':
