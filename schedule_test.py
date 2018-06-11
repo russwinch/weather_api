@@ -2,13 +2,29 @@ from threading import Thread
 import time
 
 from flask import Flask
+from requests.exceptions import ReadTimeout
 import schedule
 
 from run_darksky_get import update_darksky, read_local_darksky
 
-CURRENT_WEATHER = "not set"
 
 app = Flask(__name__)
+
+
+def update_weather(weather_file):
+    try:
+        update_darksky(weather_file)
+    except ReadTimeout as e:
+        # change the retry interval
+        print(e)
+        raise e
+        pass
+
+
+def create_schedule(job, *args, interval=15, units='minutes', **kwargs):
+    sched = getattr(schedule.every(interval), units)
+    s = sched.do(update_weather, weather_file)
+    return s
 
 
 def threaded():
@@ -28,9 +44,14 @@ def weather():
 
 if __name__ == '__main__':
     weather_file = 'darksky.json'  # this should move to the config
+    update_interval = 1  # this should move to the config
+    update_error_interval = 1  # this should move to the config
 
-    # TODO: add wrapper to catch errors, reschedule etc
-    s = schedule.every(15).seconds.do(update_darksky, weather_file)
+    create_schedule(update_weather,
+                    weather_file,
+                    interval=update_interval)
+                    # units='seconds')
+    schedule.run_all()  # remove this or trigger another way. shouldn't block flask from starting up
     t = Thread(target=threaded)
     t.start()
 

@@ -42,8 +42,8 @@ def update_darksky(file_out):
 
 
 if __name__ == '__main__':
-    weather_file = 'darksky.json'  # this should move to the config
+    weather_file = 'darkskyacs.json'  # this should move to the config
 
-    weather_response = update_darksky(weather_file)
+    # weather_response = update_darksky(weather_file)
     weather_dict = read_local_darksky(weather_file)
     print("Weather summary:\n{}".format(weather_dict['minutely']['summary']))
