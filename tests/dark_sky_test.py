@@ -2,6 +2,7 @@
 Testing the DarkSky API connector
 """
 
+import json
 import mock
 import os
 import pytest
@@ -14,7 +15,6 @@ from darksky import DarkSky
 
 OUT_FILE = 'TEST-OUT-FILE.json'
 TEST_DATA = 'tests/TEST-DATA-darksky.json'
-
 
 
 class TestInitialisation(object):
@@ -121,30 +121,31 @@ class TestRequest(object):
         assert "Content-Type not returned in header" in str(e.value)
 
 
-class test_file_operations(object):
+class TestFileOperations(object):
 
     @pytest.fixture
-    def test_data(self):
+    def darksky_with_data(self):
         yield DarkSky(key=generate_random_key())
         # make sure test file is deleted
-        # yield test_data
         print("teardown")
         if check_files(OUT_FILE):
             print("removing {}".format(OUT_FILE))
             os.remove(OUT_FILE)
 
-    @mock.patch('darksky.requests.get')
-    def test_update_darksky(mock_request, test_data):
-        test_content = retrieve_test_data(TEST_DATA)
-        mock_request.return_value = MockedDarkSkyResponse(text=test_content)
-        ds.update_darksky(OUT_FILE)
-        written_data = retrieve_test_data(OUT_FILE)
-
-        assert written_data == test_content
-
-    def test_read_local_darksky():
-        test_read = ds.read_local_darksky(TEST_DATA)
+    def test_read_file(self, darksky_with_data):
+        test_read = darksky_with_data.read_file(TEST_DATA)
         control_read = retrieve_test_data(TEST_DATA)
         control_read = json.loads(control_read)
-
         assert test_read == control_read
+
+    @mock.patch('darksky.requests.get')
+    def test_write_file(self, mock_request, darksky_with_data):
+        test_content = retrieve_test_data(TEST_DATA)
+        mock_request.return_value = MockedDarkSkyResponse(text=test_content)
+        darksky_with_data.request(latitude='1.0',
+                                  longitude='0.0',
+                                  file_out=OUT_FILE)
+        written_data = retrieve_test_data(OUT_FILE)
+        assert written_data == test_content
+
+        # add more tests to cover issues with the write file, locked etc
