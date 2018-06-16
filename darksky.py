@@ -88,6 +88,23 @@ class DarkSky(object):
             self.write_file(r, file_out)
         return r
 
+    def write_file(self, response, file_out):
+        """
+        Stores a response locally in a file as text.
+
+        :file_out: the location of the file where the forecast json will be
+        stored.
+        """
+        try:
+            with open(file_out, mode='w') as f_out:
+                f_out.write(response.text)
+        except Exception as e:
+            # determine errors and add here
+            # log e
+            # raise e
+            print(e)
+        print("Updated and written to local file.")
+
     def read_file(self, file_in):
         """
         Returns a parsed dict from the local text file.
@@ -104,36 +121,18 @@ class DarkSky(object):
         else:
             return weather_dict
 
-    def write_file(self, response, file_out):
-        """
-        Requests and returns a response from DarkSky using instance config,
-        storing it locally in a file as text.
-
-        :file_out: the location of the file where the forecast json will be
-        stored [optional]
-        """
-        try:
-            with open(file_out, mode='w') as f_out:
-                f_out.write(response.text)
-        except Exception as e:
-            # determine errors and add here
-            # log e
-            # raise e
-            print(e)
-        print("Updated and written to local file.")
-
 
 if __name__ == '__main__':
     import instance.config
-    weather_file = 'darksky.json'  # this should move to the config
 
     dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
     dark_sky.request(latitude=instance.config.LATITUDE,
                      longitude=instance.config.LONGITUDE,
-                     file_out=weather_file)
-    weather_dict = dark_sky.read_file(weather_file)
+                     file_out=instance.config.WEATHER_FILE)
+    weather_dict = dark_sky.read_file(instance.config.WEATHER_FILE)
     try:
-        print("Weather summary:\n{}".format(weather_dict['minutely']['summary']))
+        print("Weather summary:\n{}".format(
+                                        weather_dict['minutely']['summary']))
     except TypeError as e:
         # log error
         print('Error opening data file')
