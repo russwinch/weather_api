@@ -1,6 +1,5 @@
 """
-Requests data from the weather api.
-
+Request data from DarkSky's weather api.
 """
 
 import json
@@ -14,7 +13,7 @@ class DarkSky(object):
 
     def __init__(self, key=None):
         """
-        :key is the secret api key
+        :key: the secret api key
         """
         if not key:
             raise TypeError(
@@ -24,10 +23,10 @@ class DarkSky(object):
     @staticmethod
     def _raise_http_error(r):
         """
-        Attempts to look up the status code from a response
-        and raises a HTTPError.
+        Attempt to look up the status code from a response
+        and raise a HTTPError.
 
-        :r is the response object
+        :r: the response object with the erroneous status code
         """
         try:
             # look up the list of codes within requests
@@ -49,12 +48,12 @@ class DarkSky(object):
                 file_out=None):
 
         """
-        Returns a response object from the Dark Sky API.
+        Return a response object from the Dark Sky API.
 
-        :latitude and longitude can be supplied as string or float
-        :options are converted into query string paramaters
-        :headers includes http gzip conversion by default
-        :timeout is in seconds
+        :latitude and longitude: can be supplied as string or float
+        :options: converted into query string paramaters
+        :headers: includes http gzip conversion by default
+        :timeout: in seconds
         """
 
         if not latitude or not longitude:
@@ -90,10 +89,9 @@ class DarkSky(object):
 
     def write_file(self, response, file_out):
         """
-        Stores a response locally in a file as text.
+        Store a response locally in a file as text.
 
-        :file_out: the location of the file where the forecast json will be
-        stored.
+        :file_out: location of the file where the forecast json will be stored
         """
         try:
             with open(file_out, mode='w') as f_out:
@@ -107,9 +105,9 @@ class DarkSky(object):
 
     def read_file(self, file_in):
         """
-        Returns a parsed dict from the local text file.
+        Return a parsed dict from the local text file.
 
-        :file_in: the location of the file with the forecast json
+        :file_in: location of the file with the forecast json
         """
         try:
             with open(file_in) as f_in:
