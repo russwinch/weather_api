@@ -28,7 +28,7 @@ def update_weather(weather_file):
     try:
         dark_sky.request(latitude=config.latitude,
                          longitude=config.longitude,
-                         file_out=config.weather_file)
+                         file_out=weather_file)
     except (ConnectionError, ReadTimeout) as e:
         print(e)
         # log this
@@ -39,8 +39,8 @@ def create_schedule(job, *args, interval=15, units='minutes', **kwargs):
     Create a scheduled job and pass args and kwargs to it.
 
     :job: function to be scheduled
-    :interval: default time interval
-    :units: default unit of time
+    :interval: time interval
+    :units: unit of time
     """
     sched = getattr(schedule.every(interval), units)
     sched.do(job, *args, **kwargs)
