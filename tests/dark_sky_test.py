@@ -4,45 +4,11 @@ Testing the DarkSky API connector
 
 import mock
 import pytest
-import random
 from requests.exceptions import HTTPError, InvalidHeader
-import string
+
+from tests.test_base import generate_random_key, MockedDarkSkyResponse
 
 from darksky import DarkSky
-
-
-def _generate_random_key(length=32):
-    key = []
-    strings = string.ascii_letters + string.digits
-    for l in range(length):
-        next_letter = random.choice(strings)
-        key.append(next_letter)
-    key = ''.join(key)
-    print("Generated key length {}: {}".format(length, key))
-    return key
-
-
-class MockedResponse(object):
-    def __init__(self,
-                 content='{}',
-                 headers={
-                        'Server': 'nginx',
-                        'Date': 'Sat, 19 May 2018 13:13:34 GMT',
-                        'Content-Type': 'application/json; charset=utf-8',
-                        'Transfer-Encoding': 'chunked',
-                        'Connection': 'keep-alive',
-                        'X-Forecast-API-Calls': '2',
-                        'Cache-Control': 'max-age=60',
-                        'Expires': 'Sat, 19 May 2018 13:14:34 +0000',
-                        'X-Response-Time': '152.328ms',
-                        'Content-Encoding': 'gzip'},
-                 status_code=200,
-                 url='https://api.darksky.net/forecast/...'):
-
-        self.status_code = status_code
-        self.headers = headers
-        self.content = content
-        self.url = url
 
 
 class TestInitialisation(object):
@@ -56,7 +22,7 @@ class TestInitialisation(object):
     # run this next test 30 times
     @pytest.mark.parametrize('exec_no', range(30))
     def test_init_stores_key_variable(self, exec_no):
-        key = _generate_random_key()
+        key = generate_random_key()
         print("Test {} with key: {}".format(exec_no, key))
         darksky_with_key = DarkSky(key=key)
         assert darksky_with_key.key == key
@@ -68,7 +34,7 @@ class TestRequest(object):
     @staticmethod
     @pytest.fixture
     def darksky():
-        return DarkSky(key=_generate_random_key())
+        return DarkSky(key=generate_random_key())
 
     def test_request_raises_TypeError_with_missing_lat_long(self, darksky):
         with pytest.raises(TypeError) as e:
@@ -93,7 +59,7 @@ class TestRequest(object):
                                                    mock_request,
                                                    darksky):
         try:
-            mock_request.return_value = MockedResponse(status_code=200)
+            mock_request.return_value = MockedDarkSkyResponse(status_code=200)
             darksky.request(latitude='1.0', longitude='1.0')
         except Exception as e:
             pytest.fail(str(e))
@@ -106,7 +72,7 @@ class TestRequest(object):
                                                            darksky):
         print(status_code)
         with pytest.raises(HTTPError) as e:
-            mock_response = MockedResponse(status_code=status_code)
+            mock_response = MockedDarkSkyResponse(status_code=status_code)
             mock_request.return_value = mock_response
             darksky.request(latitude='1.0', longitude='1.0')
         assert (str(status_code) in str(e.value))
@@ -116,7 +82,7 @@ class TestRequest(object):
                                                           mock_request,
                                                           darksky):
         try:
-            mock_response = MockedResponse()
+            mock_response = MockedDarkSkyResponse()
             mock_request.return_value = mock_response
             darksky.request(latitude='1.0', longitude='1.0')
         except InvalidHeader as e:
@@ -131,7 +97,7 @@ class TestRequest(object):
                                                         headers,
                                                         darksky):
         with pytest.raises(InvalidHeader) as e:
-            mock_response = MockedResponse(headers=headers)
+            mock_response = MockedDarkSkyResponse(headers=headers)
             print(headers)
             mock_request.return_value = mock_response
             darksky.request(latitude='1.0', longitude='1.0')
@@ -143,7 +109,7 @@ class TestRequest(object):
                                                                 mock_request,
                                                                 darksky):
         with pytest.raises(InvalidHeader) as e:
-            mock_response = MockedResponse(headers={})
+            mock_response = MockedDarkSkyResponse(headers={})
             mock_request.return_value = mock_response
             darksky.request(latitude='1.0', longitude='1.0')
         assert "Content-Type not returned in header" in str(e.value)
