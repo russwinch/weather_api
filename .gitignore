@@ -59,6 +59,10 @@ venv/
 
 # instance
 instance/
+.mypy_cache/
 
 # vim swap files
 .*.swp
+
+# pytest
+.pytest_cache/
