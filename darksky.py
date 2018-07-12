@@ -1,8 +1,8 @@
 """
-Requests data from the weather api.
-
+Request data from DarkSky's weather api.
 """
 
+import json
 import requests
 from requests.exceptions import HTTPError, InvalidHeader
 
@@ -13,7 +13,7 @@ class DarkSky(object):
 
     def __init__(self, key=None):
         """
-        :key is the secret api key
+        :key: the secret api key
         """
         if not key:
             raise TypeError(
@@ -23,10 +23,10 @@ class DarkSky(object):
     @staticmethod
     def _raise_http_error(r):
         """
-        Attempts to look up the status code from a response
-        and raises a HTTPError.
+        Attempt to look up the status code from a response
+        and raise a HTTPError.
 
-        :r is the response object
+        :r: the response object with the erroneous status code
         """
         try:
             # look up the list of codes within requests
@@ -44,15 +44,16 @@ class DarkSky(object):
                 longitude=None,
                 options={'units': 'si', 'extend': 'hourly'},
                 headers={'Accept-Encoding': 'gzip'},
-                timeout=2):
+                timeout=2,
+                file_out=None):
 
         """
-        Returns a response object from the Dark Sky API.
+        Return a response object from the Dark Sky API.
 
-        :latitude and longitude can be supplied as string or float
-        :options are converted into query string paramaters
-        :headers includes http gzip conversion by default
-        :timeout is in seconds
+        :latitude and longitude: can be supplied as string or float
+        :options: converted into query string paramaters
+        :headers: includes http gzip conversion by default
+        :timeout: in seconds
         """
 
         if not latitude or not longitude:
@@ -81,4 +82,55 @@ class DarkSky(object):
             raise InvalidHeader(
                     "Content type is not JSON as expected: {}".format(
                         content_type))
+
+        if file_out:
+            self.write_file(r, file_out)
         return r
+
+    def write_file(self, response, file_out):
+        """
+        Store a response locally in a file as text.
+
+        :file_out: location of the file where the forecast json will be stored
+        """
+        try:
+            with open(file_out, mode='w') as f_out:
+                f_out.write(response.text)
+        except Exception as e:
+            # determine errors and add here
+            # log e
+            # raise e
+            print(e)
+        print("Updated and written to local file.")
+
+    def read_file(self, file_in):
+        """
+        Return a parsed dict from the local text file.
+
+        :file_in: location of the file with the forecast json
+        """
+        try:
+            with open(file_in) as f_in:
+                weather_json = f_in.read()
+                weather_dict = json.loads(weather_json)
+        except FileNotFoundError as e:
+            # log error
+            print(e)
+        else:
+            return weather_dict
+
+
+if __name__ == '__main__':
+    import instance.config
+
+    dark_sky = DarkSky(key=instance.config.DARK_SKY_API_KEY)
+    dark_sky.request(latitude=instance.config.LATITUDE,
+                     longitude=instance.config.LONGITUDE,
+                     file_out=instance.config.WEATHER_FILE)
+    weather_dict = dark_sky.read_file(instance.config.WEATHER_FILE)
+    try:
+        print("Weather summary:\n{}".format(
+                                        weather_dict['minutely']['summary']))
+    except TypeError as e:
+        # log error
+        print('Error opening data file')
