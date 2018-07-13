@@ -11,14 +11,14 @@ from flask import Flask, flash, render_template, redirect, request,\
 # create the application object:
 app = Flask(__name__)
 
-app.secret_key = "my_precious" # this key must be relocated to instance/config
+app.secret_key = "my_precious"  # this key must be relocated to instance/config
 
 
 # use decorators to link the function to a url:
 @app.route('/')
 def home():
     """calls the web site home page"""
-    return render_template("index.html")
+    return render_template("home.html")
 
 
 #  route for handling the login page logic:

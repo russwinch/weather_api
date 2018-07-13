@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 {% block content %}
 
-<h3>Weather API - Please login</h3>
+<h3>Please login</h3>
 <br>
 <form action="" method="post">
   <input type="text" placeholder="Username" name="username" value="{{  
@@ -11,6 +11,5 @@
   <input class="btn btn-default" type="submit" value="Login">
 </form>
 <br>
-<p>Click <a href="/">here</a> to go to the home page</p>
 
 {% endblock %}
