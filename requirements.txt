@@ -11,7 +11,7 @@ mock==2.0.0
 more-itertools==4.1.0
 pbr==4.0.2
 pluggy==0.6.0
-py==1.5.3
+py==1.10.0
 pytest==3.5.1
 requests==2.18.4
 schedule==0.5.0
